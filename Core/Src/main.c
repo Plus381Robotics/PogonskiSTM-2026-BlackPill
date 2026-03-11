@@ -103,6 +103,7 @@ int main(void)
 	time_start();
 	enc_init();
 	pwm_init();
+	odometry_init ();
   /* USER CODE END 2 */
 
   /* Infinite loop */

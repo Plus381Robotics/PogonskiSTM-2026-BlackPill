@@ -13,19 +13,25 @@ volatile int16_t tim2_cur = 0, tim3_cur = 0, tim4_cur = 0, tim5_cur = 0;
 volatile double vel_dbg;
 volatile double motorCtrl, out_vel;
 static uint8_t uart_psc = 10, uart_psc_cnt = 1;
+float vl = 0.0, vr = 0.0;
 
 void time_ISR()	// poziva se u stm32f4xx_it.c, na 1ms
 {
 	// TODO: u uint16_t (mzd bez u), postaviti pwm, napidovati
 
 	sys_time_ms++;
-	update_odom ();
+	update_odom();
 
 	uart_psc_cnt++;
 	if (uart_psc_cnt >= uart_psc) {
 		uart_psc_cnt = 0;
 		update_tx_buffer();
 //		process_rx_buffer();
+// TODO: uzimanje iz comm i zadavanje brzine motorima u pwm
+		vl = vel_dbg;
+		vr = vel_dbg;
+		pwm_left(vl);
+		pwm_right(vr);
 	}
 }
 

@@ -69,6 +69,8 @@ void process_rx_buffer()
 	for (int i = 0; i < RXBUFFERSIZE; i++)
 	    rx_process_byte(rx_buffer[i]);
 
+	// TODO: mora ona obrada sa 255 255
+
 	v_left_2B = ((int8_t)rxb_aligned[1] << 8 | rxb_aligned[0]);
 	v_right_2B= ((int8_t)rxb_aligned[3] << 8 | rxb_aligned[2]);
 	v_left_comm = (float)(v_left_2B >> 14);
