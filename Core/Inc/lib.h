@@ -67,6 +67,8 @@ get_w();
 //signal.h
 void
 wrap180(volatile double *signal);
+void
+wrap2Pi (volatile double *signal);
 
 //motorControl.h
 double calculate_control(double ref, double y);

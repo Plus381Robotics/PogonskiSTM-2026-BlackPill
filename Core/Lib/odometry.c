@@ -26,10 +26,10 @@ volatile double x_base = 0.0, y_base = 0.0, phi_base = 0.0;
 void
 odometry_init ()
 {
-	L_wheel = 0.3;																	// [mm], rastojanje izmedju odometrijskih tockova
-	L_wheel_recip = 1000 / L_wheel;										// [1/m]
-	d_odom_left = 0.07534;															// [mm]
-	d_odom_right = 0.07592;															// [mm]
+	L_wheel = 0.299;																	// [m], rastojanje izmedju odometrijskih tockova
+	L_wheel_recip = 1 / L_wheel;										// [1/m]
+	d_odom_left = 0.07534;															// [m]
+	d_odom_right = 0.07592;															// [m]
 	enc_r_sum = 0;
 	enc_l_sum = 0;
 }
@@ -40,17 +40,19 @@ update_odom ()
 	v_r_diff = cnt_difference (&htim5, &enc_r_sum);			// [inc/ms]
 	v_l_diff = cnt_difference (&htim3, &enc_l_sum);
 	// TODO: mora da se koriste i d
-	v_right = enc_velocity (v_r_diff, 0.001, 8192);			// rad/s, a treba da budu m/s
-	v_left = enc_velocity (v_l_diff, 0.001, 8192);
+	v_right = -enc_velocity (v_r_diff, 0.001, 8192) * d_odom_right;			// rad/s, a treba da budu m/s
+	v_left = enc_velocity (v_l_diff, 0.001, 8192) * d_odom_left;
+//	v_right = v_left;
 
 	v_base = (v_right + v_left) * 0.5;									// [m/s]
 	w_base = (v_right - v_left) * L_wheel_recip;				// [rad/s]
 	mid_angle = (phi_base + w_base * 0.005);						// [rad + 0.5*rad/s * 0.001s = rad]
 
-	x_base += v_base * cos (mid_angle);									// [mm/ms * 1ms = mm]
-	y_base += v_base * sin (mid_angle);
-	phi_base += 0.001 * w_base;													// [0.001s * rad/s = rad]
-	wrap180 (&phi_base);
+	x_base += v_base * cos (mid_angle) * 0.001;									// [mm/ms * 1ms = mm]
+	y_base += v_base * sin (mid_angle) * 0.001;
+	phi_base += w_base * 0.001;													// [0.001s * rad/s = rad]
+
+	wrap2Pi (&phi_base);
 }
 
 double
