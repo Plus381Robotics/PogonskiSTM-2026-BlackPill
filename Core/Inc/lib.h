@@ -17,6 +17,25 @@
 #include "gpio.h"
 #include "usart.h"
 
+typedef struct goal_struct {
+	int8_t type;
+	double x;
+	double y;
+	double phi;
+	int8_t direction;
+	double v_max;
+	double w_max;
+	double distance_tolerance_percentage;
+	double angle_tolerance_percentage;
+	double start_coeff_v;
+	double start_coeff_w;
+	double stop_coeff_v;
+	double stop_coeff_w;
+	int8_t status; // -1 = success; -2 = canceled; -3 = interrupted; -4 = timed out
+	double distance_remaininig;
+	double angle_remaining;
+} goal_type;
+
 // time.h
 void
 time_ISR();
@@ -104,32 +123,14 @@ void
 update_tx_buffer();
 void
 comm_init();
-void
-process_rx_buffer();
+void process_rx_buffer();
+goal_type* get_rx_goal();
 
 // control.h
 void control_loop();
 void move_init();
 double get_v_r();
 double get_v_l();
-typedef struct goal_struct {
-	int8_t type;
-	double x;
-	double y;
-	double phi;
-	int8_t direction;
-	double v_max;
-	double w_max;
-	double distance_tolerance_percentage;
-	double angle_tolerance_percentage;
-	double start_coeff_v;
-	double start_coeff_w;
-	double stop_coeff_v;
-	double stop_coeff_w;
-	int8_t status; // -1 = success; -2 = canceled; -3 = interrupted; -4 = timed out
-	double distance_remaininig;
-	double angle_remaining;
-} goal_type;
 void move_goal(goal_type *goal);
 
 #endif /* LIB_LIB_H_ */

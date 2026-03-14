@@ -46,7 +46,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+goal_type rot_goal, xy_goal;
+goal_type* rx_goal_ptr;
+int16_t main_fsm_state = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,10 +110,7 @@ int main(void) {
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	/*
-	 * phi, w_max=99.0, ang_tol_perc=1.0, start_coeff_w=1.0, stop_coeff_w=1.0
-	 */
-	goal_type rot_goal, xy_goal;
+
 	rot_goal.type = -1;
 	rot_goal.phi = 3.14;
 	rot_goal.w_max = 3.14;
@@ -131,12 +130,23 @@ int main(void) {
 	xy_goal.start_coeff_w = 1.0;
 	xy_goal.stop_coeff_v = 1.0;
 	xy_goal.stop_coeff_w = 1.0;
-	move_goal(&xy_goal);
+//	move_goal(&xy_goal);
 
 	while (1) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+		switch (main_fsm_state) {
+		case 0:
+			rx_goal_ptr = get_rx_goal();
+//			if (rx_goal_ptr->status < 0)
+//				main_fsm_state = -1;
+//			else
+				move_goal(rx_goal_ptr);
+			break;
+		case -1:
+			break;
+		}
 	}
 	/* USER CODE END 3 */
 }

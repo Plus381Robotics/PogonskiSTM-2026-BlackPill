@@ -10,9 +10,11 @@
 static void reset_movement();
 static void rotate();
 static void go_to_xy();
+static void reset_goal(goal_type *goal_ptr);
 
 double V_MIN_, V_MAX_, W_MIN_, W_MAX_;
 double L_, L_MIN_, L_MAX_;
+double STACKED_TIME_;
 double D_TOL_, D_LONG_TOL_, D_PROJ_TOL_, D_SHORT_TOL_;
 double d_tol_perc_ = 1.0, phi_tol_perc_ = 1.0, PHI_TOL_;
 double eta_;
@@ -45,6 +47,9 @@ unsigned stacked_cnt_ = 0;
 double V_SLOWED_MAX_ = 0.75;
 
 void move_init() {
+// TODO: vrati na 0.5 ili manje
+	STACKED_TIME_ = 100.0;
+
 	dt_ = 0.001;
 	V_MIN_ = 0.1;
 	V_MAX_ = 1.5;
@@ -67,10 +72,10 @@ void move_init() {
 	D_SHORT_TOL_ = 0.05; // minimal distance for rotation during translation
 	PHI_TOL_ = 0.0157; // absolute angle from target
 
-    v_max_temp_ = V_MAX_;
-    w_max_temp_ = W_MAX_;
-    j_max_temp_ = J_MAX_;
-    j_rot_max_temp_ = J_ROT_MAX_;
+	v_max_temp_ = V_MAX_;
+	w_max_temp_ = W_MAX_;
+	j_max_temp_ = J_MAX_;
+	j_rot_max_temp_ = J_ROT_MAX_;
 }
 
 void control_loop() {
@@ -228,7 +233,8 @@ static void go_to_xy() {
 				&& fabs(w_base_) < W_MIN_) {
 			reset_movement();
 			movement_state_ = -4;
-		} else if (stacked(0.5, v_base_, V_MIN_, 1.0 / dt_, &stacked_cnt_)) {
+		} else if (stacked(STACKED_TIME_, v_base_, V_MIN_, 1.0 / dt_,
+				&stacked_cnt_)) {
 			reset_movement();
 			movement_state_ = -3;
 		}
@@ -237,69 +243,91 @@ static void go_to_xy() {
 }
 
 void move_goal(goal_type *goal) {
-	x_base_ = get_x();
-	y_base_ = get_y();
-	phi_base_ = get_phi();
-	v_max_temp_ = clamp(goal->v_max, V_MIN_, V_MAX_);
-	w_max_temp_ = clamp(goal->w_max, W_MIN_, W_MAX_);
-	starting_coeff_v_ = clamp(goal->start_coeff_v, 1.0, 10.0);
-	stopping_coeff_v_ = clamp(goal->stop_coeff_v, 1.0, 10.0);
-	starting_coeff_w_ = clamp(goal->start_coeff_w, 1.0, 10.0);
-	stopping_coeff_w_ = clamp(goal->stop_coeff_w, 1.0, 10.0);
-	d_tol_perc_ = clamp(goal->distance_tolerance_percentage, 1.0, 10.0);
-	phi_tol_perc_ = clamp(goal->angle_tolerance_percentage, 1.0, 10.0);
-	direction_ = goal->direction;
+	goal->status = movement_state_;
+	if (goal->status < 0)
+		reset_goal(goal);
+	else if (goal->status == 0) {
+		x_base_ = get_x();
+		y_base_ = get_y();
+		phi_base_ = get_phi();
+		v_max_temp_ = clamp(goal->v_max, V_MIN_, V_MAX_);
+		w_max_temp_ = clamp(goal->w_max, W_MIN_, W_MAX_);
+		starting_coeff_v_ = clamp(goal->start_coeff_v, 1.0, 10.0);
+		stopping_coeff_v_ = clamp(goal->stop_coeff_v, 1.0, 10.0);
+		starting_coeff_w_ = clamp(goal->start_coeff_w, 1.0, 10.0);
+		stopping_coeff_w_ = clamp(goal->stop_coeff_w, 1.0, 10.0);
+		d_tol_perc_ = clamp(goal->distance_tolerance_percentage, 1.0, 10.0);
+		phi_tol_perc_ = clamp(goal->angle_tolerance_percentage, 1.0, 10.0);
+		direction_ = goal->direction;
 
-	switch (goal->type) {
-	// Rotate to Phi
-	case -1:
-		x_ref_ = x_base_;
-		y_ref_ = y_base_;
-		phi_ref_ = goal->phi;
-		reg_type_ = -1;
-		break;
-		// Rotate to XY
-	case -2:
-		x_ref_ = x_base_;
-		y_ref_ = y_base_;
-		phi_ref_ = wrap(
-				atan2(goal->y - y_base_, goal->x - x_base_)
-						+ (goal->direction - 1) * M_PI * 0.5, -M_PI, M_PI);
-		reg_type_ = -1;
-		break;
-		// Move to XY
-	case 1:
-		x_ref_ = goal->x;
-		y_ref_ = goal->y;
-		phi_ref_ = 0.0;
-		reg_type_ = 1;
-		break;
-		// Move on Direction
-	case 2:
-		x_ref_ = x_base_ + goal->direction * goal->y * cos(phi_base_);
-		y_ref_ = y_base_ + goal->direction * goal->y * sin(phi_base_);
-		phi_ref_ = phi_base_;
-		reg_type_ = 1;
-		break;
-		// Move on Direction Snapped
-	case 3:
-		x_ref_ = x_base_
-				+ goal->direction * goal->y
-						* cos(snap_angle(phi_base_, goal->phi));
-		y_ref_ = y_base_
-				+ goal->direction * goal->y
-						* sin(snap_angle(phi_base_, goal->phi));
-		phi_ref_ = snap_angle(phi_base_, goal->phi);
-		reg_type_ = 1;
-		break;
-		// Move on Angle
-	case 4:
-		x_ref_ = x_base_ + goal->direction * goal->y * cos(goal->phi);
-		y_ref_ = y_base_ + goal->direction * goal->y * sin(goal->phi);
-		phi_ref_ = goal->phi;
-		reg_type_ = 1;
-		break;
+		switch (goal->type) {
+		// Rotate to Phi
+		case -1:
+			x_ref_ = x_base_;
+			y_ref_ = y_base_;
+			phi_ref_ = goal->phi;
+			reg_type_ = -1;
+			break;
+			// Rotate to XY
+		case -2:
+			x_ref_ = x_base_;
+			y_ref_ = y_base_;
+			phi_ref_ = wrap(
+					atan2(goal->y - y_base_, goal->x - x_base_)
+							+ (goal->direction - 1) * M_PI * 0.5, -M_PI, M_PI);
+			reg_type_ = -1;
+			break;
+			// Move to XY
+		case 1:
+			x_ref_ = goal->x;
+			y_ref_ = goal->y;
+			phi_ref_ = 0.0;
+			reg_type_ = 1;
+			break;
+			// Move on Direction
+		case 2:
+			x_ref_ = x_base_ + goal->direction * goal->y * cos(phi_base_);
+			y_ref_ = y_base_ + goal->direction * goal->y * sin(phi_base_);
+			phi_ref_ = phi_base_;
+			reg_type_ = 1;
+			break;
+			// Move on Direction Snapped
+		case 3:
+			x_ref_ = x_base_
+					+ goal->direction * goal->y
+							* cos(snap_angle(phi_base_, goal->phi));
+			y_ref_ = y_base_
+					+ goal->direction * goal->y
+							* sin(snap_angle(phi_base_, goal->phi));
+			phi_ref_ = snap_angle(phi_base_, goal->phi);
+			reg_type_ = 1;
+			break;
+			// Move on Angle
+		case 4:
+			x_ref_ = x_base_ + goal->direction * goal->y * cos(goal->phi);
+			y_ref_ = y_base_ + goal->direction * goal->y * sin(goal->phi);
+			phi_ref_ = goal->phi;
+			reg_type_ = 1;
+			break;
+		}
 	}
+}
+
+static void reset_goal(goal_type *goal_ptr) {
+	goal_ptr->type = 0;
+	goal_ptr->x = get_x();
+	goal_ptr->y = get_y();
+	goal_ptr->phi = get_phi();
+	goal_ptr->direction = 0;
+	goal_ptr->v_max = V_MAX_;
+	goal_ptr->w_max = V_MIN_;
+	goal_ptr->distance_tolerance_percentage = 1.0;
+	goal_ptr->angle_tolerance_percentage = 1.0;
+	goal_ptr->start_coeff_v = 1.0;
+	goal_ptr->start_coeff_w = 1.0;
+	goal_ptr->stop_coeff_v = 1.0;
+	goal_ptr->stop_coeff_w = 1.0;
+//	goal_ptr->status = 0; // -1 = success; -2 = canceled; -3 = interrupted; -4 = timed out
 }
 
 static void reset_movement() {
