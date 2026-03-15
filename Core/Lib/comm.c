@@ -11,7 +11,7 @@
 #include <string.h>
 
 static uint16_t fletcher16(uint8_t *data, size_t len);
-static void create_rxba();
+static uint8_t create_rxba();
 
 volatile uint8_t tx_buffer[TXBUFFERSIZE], rx_buffer[RXBUFFERSIZE];
 volatile uint8_t rxba[32];
@@ -47,15 +47,23 @@ double x_dbg = 1.0, y_dbg = 0.0, phi_dbg = 0.0;
  * 	 uint16 checksum
  *
  * STM32 -> ROS2:
- *
+ * 40B:
+ *	 int8	status kratnje
+ *	 int32	x_10k
+ *	 int32	y_10k
+ *	 int32	phi_10k
+ *	 int32	v_10k
+ *	 int32	w_10k
+
  */
 
 void process_rx_buffer() {
-	// izvrsava cilj
-	if (rx_goal.status > -1)
+	if (rx_goal.status != 10)
 		return;
 
-	create_rxba();
+	if (!create_rxba())
+		return;
+
 	uint16_t received_checksum = rxba[30] | (rxba[31] << 8);
 	uint16_t calculated_checksum = fletcher16(rxba, 30);
 	if (received_checksum != calculated_checksum) {
@@ -74,7 +82,8 @@ void process_rx_buffer() {
 	uint8_t w_max_10 = rxba[27];
 	rx_goal.w_max = w_max_10 * 0.1;
 	uint8_t tol_byte = rxba[28];
-	rx_goal.distance_tolerance_percentage = (((tol_byte >> 4) & 0b1111) + 1) * 0.0625;
+	rx_goal.distance_tolerance_percentage = (((tol_byte >> 4) & 0b1111) + 1)
+			* 0.0625;
 	rx_goal.angle_tolerance_percentage = (((tol_byte) & 0b1111) + 1) * 0.0625;
 	uint8_t coeff_byte = rxba[29];
 	rx_goal.start_coeff_v = (((coeff_byte >> 6) & 0b11) + 1) * 0.25;
@@ -92,19 +101,35 @@ void update_tx_buffer() {
 	for (int i = 0; i < 8; i++)
 		tx_buffer[i] = 0xFF;
 
-	tx_buffer[8] = 1;
-	memcpy(&tx_buffer[9], &x_dbg, sizeof(double));   // x
-	memcpy(&tx_buffer[17], &y_dbg, sizeof(double));  // y
-	memcpy(&tx_buffer[25], &phi_dbg, sizeof(double));  // phi
-	tx_buffer[33] = 1;      // direction
-	tx_buffer[34] = 150;    // v_max_100
-	tx_buffer[35] = 94;     // w_max_10
-	tx_buffer[36] = 0xff; 	// tol_perc_16
-	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
-	// checksum over payload bytes (8→37)
+// XXX: slanje cilja za kretnju, za testiranje
+//	tx_buffer[8] = 1;
+//	memcpy(&tx_buffer[9], &x_dbg, sizeof(double));
+//	memcpy(&tx_buffer[17], &y_dbg, sizeof(double));
+//	memcpy(&tx_buffer[25], &phi_dbg, sizeof(double));
+//	tx_buffer[33] = 1;      // direction
+//	tx_buffer[34] = 150;    // v_max_100
+//	tx_buffer[35] = 94;     // w_max_10
+//	tx_buffer[36] = 0xff; 	// tol_perc_16
+//	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
+//	// checksum over payload bytes (8→37)
+
+	tx_buffer[8] = rx_goal.status;
+	int32_t x = (int32_t)(get_x() * 10000.0);
+	int32_t y = (int32_t)(get_y() * 10000.0);
+	int32_t phi = (int32_t)(get_phi() * 10000.0);
+	int32_t v = (int32_t)(get_v() * 10000.0);
+	int32_t w = (int32_t)(get_w() * 10000.0);
+	memcpy(&tx_buffer[9], &x, sizeof(int32_t));
+	memcpy(&tx_buffer[13], &y, sizeof(int32_t));
+	memcpy(&tx_buffer[17], &phi, sizeof(int32_t));
+	memcpy(&tx_buffer[21], &v, sizeof(int32_t));
+	memcpy(&tx_buffer[25], &w, sizeof(int32_t));
+	memset(&tx_buffer[29], 0, 9);
+
 	uint16_t cksum = fletcher16(&tx_buffer[8], 30);
 	tx_buffer[38] = cksum & 0xFF;
 	tx_buffer[39] = cksum >> 8;
+
 
 	huart1.gState = HAL_UART_STATE_READY;
 	__HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TC);
@@ -123,7 +148,7 @@ static uint16_t fletcher16(uint8_t *data, size_t len) {
 	return (sum2 << 8) | sum1;
 }
 
-static void create_rxba() {
+static uint8_t create_rxba() {
 	int start_index = -1;
 
 	for (int i = 0; i <= RXBUFFERSIZE - 8; i++) {
@@ -136,7 +161,7 @@ static void create_rxba() {
 		}
 	}
 	if (start_index < 0)
-		return;
+		return 0;
 
 	int first = 40 - start_index;
 	if (first >= 32)
@@ -145,10 +170,11 @@ static void create_rxba() {
 		memcpy(rxba, &rx_buffer[start_index], first);
 		memcpy(rxba + first, &rx_buffer[0], 32 - first);
 	}
+	return 1;
 }
 
 void comm_init() {
-	rx_goal.status = -1;
+	rx_goal.status = 10;
 
 	if (HAL_UART_Receive_DMA(&huart1, (uint8_t*) rx_buffer,
 	RXBUFFERSIZE) != HAL_OK) {
