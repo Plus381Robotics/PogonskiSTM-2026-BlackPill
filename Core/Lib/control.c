@@ -327,7 +327,7 @@ static void reset_goal(goal_type *goal_ptr) {
 	goal_ptr->start_coeff_w = 1.0;
 	goal_ptr->stop_coeff_v = 1.0;
 	goal_ptr->stop_coeff_w = 1.0;
-//	goal_ptr->status = 0; // -1 = success; -2 = canceled; -3 = interrupted; -4 = timed out
+	goal_ptr->status = 10;
 }
 
 static void reset_movement() {
