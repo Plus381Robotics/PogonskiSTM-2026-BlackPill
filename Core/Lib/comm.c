@@ -58,7 +58,7 @@ double x_dbg = 1.0, y_dbg = 0.0, phi_dbg = 0.0;
  */
 
 void process_rx_buffer() {
-	if (rx_goal.status != 10)
+	if (rx_goal.status != 10 && rx_goal.status != 0)
 		return;
 
 	if (!create_rxba())
@@ -102,29 +102,29 @@ void update_tx_buffer() {
 		tx_buffer[i] = 0xFF;
 
 // XXX: slanje cilja za kretnju, za testiranje
-//	tx_buffer[8] = 1;
-//	memcpy(&tx_buffer[9], &x_dbg, sizeof(double));
-//	memcpy(&tx_buffer[17], &y_dbg, sizeof(double));
-//	memcpy(&tx_buffer[25], &phi_dbg, sizeof(double));
-//	tx_buffer[33] = 1;      // direction
-//	tx_buffer[34] = 150;    // v_max_100
-//	tx_buffer[35] = 94;     // w_max_10
-//	tx_buffer[36] = 0xff; 	// tol_perc_16
-//	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
-//	// checksum over payload bytes (8→37)
+	tx_buffer[8] = 1;
+	memcpy(&tx_buffer[9], &x_dbg, sizeof(double));
+	memcpy(&tx_buffer[17], &y_dbg, sizeof(double));
+	memcpy(&tx_buffer[25], &phi_dbg, sizeof(double));
+	tx_buffer[33] = 1;      // direction
+	tx_buffer[34] = 150;    // v_max_100
+	tx_buffer[35] = 94;     // w_max_10
+	tx_buffer[36] = 0xff; 	// tol_perc_16
+	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
+	// checksum over payload bytes (8→37)
 
-	tx_buffer[8] = rx_goal.status;
-	int32_t x = (int32_t)(get_x() * 10000.0);
-	int32_t y = (int32_t)(get_y() * 10000.0);
-	int32_t phi = (int32_t)(get_phi() * 10000.0);
-	int32_t v = (int32_t)(get_v() * 10000.0);
-	int32_t w = (int32_t)(get_w() * 10000.0);
-	memcpy(&tx_buffer[9], &x, sizeof(int32_t));
-	memcpy(&tx_buffer[13], &y, sizeof(int32_t));
-	memcpy(&tx_buffer[17], &phi, sizeof(int32_t));
-	memcpy(&tx_buffer[21], &v, sizeof(int32_t));
-	memcpy(&tx_buffer[25], &w, sizeof(int32_t));
-	memset(&tx_buffer[29], 0, 9);
+//	tx_buffer[8] = rx_goal.status;
+//	int32_t x = (int32_t)(get_x() * 10000.0);
+//	int32_t y = (int32_t)(get_y() * 10000.0);
+//	int32_t phi = (int32_t)(get_phi() * 10000.0);
+//	int32_t v = (int32_t)(get_v() * 10000.0);
+//	int32_t w = (int32_t)(get_w() * 10000.0);
+//	memcpy(&tx_buffer[9], &x, sizeof(int32_t));
+//	memcpy(&tx_buffer[13], &y, sizeof(int32_t));
+//	memcpy(&tx_buffer[17], &phi, sizeof(int32_t));
+//	memcpy(&tx_buffer[21], &v, sizeof(int32_t));
+//	memcpy(&tx_buffer[25], &w, sizeof(int32_t));
+//	memset(&tx_buffer[29], 0, 9);
 
 	uint16_t cksum = fletcher16(&tx_buffer[8], 30);
 	tx_buffer[38] = cksum & 0xFF;

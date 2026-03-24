@@ -22,10 +22,10 @@ void time_ISR()	// poziva se u stm32f4xx_it.c, na 1ms
 	sys_time_ms++;
 	update_odom();
 	control_loop();
-	vl = vel_dbg;
-	vr = vel_dbg;
-	pwm_left(vl);
-	pwm_right(vr);
+//	vl = vel_dbg;
+//	vr = vel_dbg;
+//	pwm_left(vl);
+//	pwm_right(vr);
 
 	uart_psc_cnt++;
 	if (uart_psc_cnt >= uart_psc) {

@@ -139,19 +139,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		set_motor_l_dir(dir_dbg);
-		set_motor_r_dir(dir_dbg);
-//		switch (main_fsm_state) {
-//		case 0:
-//			rx_goal_ptr = get_rx_goal();
-////			if (rx_goal_ptr->status < 0)
-////				main_fsm_state = -1;
-////			else
-//				move_goal(rx_goal_ptr);
-//			break;
-//		case -1:
-//			break;
-//		}
+//		set_motor_l_dir(dir_dbg);
+//		set_motor_r_dir(dir_dbg);
+		switch (main_fsm_state) {
+		case 0:
+			rx_goal_ptr = get_rx_goal();
+//			if (rx_goal_ptr->status < 0)
+//				main_fsm_state = -1;
+//			else
+				move_goal(rx_goal_ptr);
+			break;
+		case -1:
+			break;
+		}
 	}
   /* USER CODE END 3 */
 }

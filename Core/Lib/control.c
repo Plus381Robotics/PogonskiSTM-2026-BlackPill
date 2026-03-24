@@ -61,7 +61,7 @@ void move_init() {
 	L_MAX_ = 0.1935;
 	L_MIN_ = 0.1155;
 	eta_ = 0.01;
-	P_w_ = 10.0;
+	P_w_ = 2.0;
 	J_MAX_ = 25.0;
 	J_MAX_STOP_ = 50.0;
 	J_ROT_MAX_ = 500.0;
@@ -104,8 +104,8 @@ void control_loop() {
 	double scale_factor = scale_vel_ref(&v_right_, &v_left_, MOTOR_V_MAX_);
 	v_right_ *= scale_factor;
 	v_left_ *= scale_factor;
-//	pwm_right(v_right_);
-//	pwm_left(v_left_);
+	pwm_right(v_right_);
+	pwm_left(v_left_);
 
 	a_ = (v_base_ - prev_v_) / dt_;
 	alpha_ = (w_base_ - prev_w_) / dt_;
