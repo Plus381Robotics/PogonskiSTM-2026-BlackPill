@@ -58,7 +58,7 @@ double x_dbg = 1.0, y_dbg = 0.0, phi_dbg = 0.0;
  */
 
 void process_rx_buffer() {
-	if (rx_goal.status != 10 && rx_goal.status != 0)
+	if (rx_goal.status != 0)
 		return;
 
 	if (!create_rxba())
@@ -174,7 +174,7 @@ static uint8_t create_rxba() {
 }
 
 void comm_init() {
-	rx_goal.status = 10;
+	rx_goal.status = 0;
 
 	if (HAL_UART_Receive_DMA(&huart1, (uint8_t*) rx_buffer,
 	RXBUFFERSIZE) != HAL_OK) {

@@ -11,6 +11,7 @@ static void reset_movement();
 static void rotate();
 static void go_to_xy();
 static void reset_goal(goal_type *goal_ptr);
+static void velocity_loop();
 
 double V_MIN_, V_MAX_, W_MIN_, W_MAX_;
 double L_, L_MIN_, L_MAX_;
@@ -26,11 +27,12 @@ double stopping_angle_ = 0, starting_angle_ = 0;       // [rad]
 double d_tol_perc_, phi_tol_perc_;
 int8_t direction_, obstacle_dir_ = 0;
 double x_base_, y_base_, phi_base_, v_base_, w_base_;
-double x_ref_, y_ref_, phi_ref_, v_ref_, w_ref_;
+double x_ref_, y_ref_, phi_ref_, v_ref_, w_ref_, v_ctrl_, w_ctrl_;
 double prev_v_, prev_w_;
 double a_, alpha_;
 int8_t reg_type_;
 double dt_;
+double v_right_ref_, v_left_ref_;
 double v_right_, v_left_;
 double MOTOR_V_MAX_;
 double phi_error_, x_error_, y_error_;
@@ -45,6 +47,7 @@ uint8_t obstacle_status_changed_ = 0;
 double P_w_;
 unsigned stacked_cnt_ = 0;
 double V_SLOWED_MAX_ = 0.75;
+volatile pid v_loop, w_loop;
 
 void move_init() {
 // TODO: vrati na 0.5 ili manje
@@ -76,6 +79,9 @@ void move_init() {
 	w_max_temp_ = W_MAX_;
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
+
+	init_pid(&v_loop, 4.0, 0.0, 0.0, 1680, 1680);
+	init_pid(&w_loop, 4.0, 0.0, 0.0, 1680, 1680);
 }
 
 void control_loop() {
@@ -99,19 +105,31 @@ void control_loop() {
 		break;
 	}
 
-	v_right_ = v_ref_ + w_ref_ * L_ * 0.5;
-	v_left_ = v_ref_ - w_ref_ * L_ * 0.5;
-	double scale_factor = scale_vel_ref(&v_right_, &v_left_, MOTOR_V_MAX_);
-	v_right_ *= scale_factor;
-	v_left_ *= scale_factor;
-	pwm_right(v_right_);
-	pwm_left(v_left_);
+	velocity_loop();
 
 	a_ = (v_base_ - prev_v_) / dt_;
 	alpha_ = (w_base_ - prev_w_) / dt_;
 
 	prev_v_ = v_base_;
 	prev_w_ = w_base_;
+}
+
+static void velocity_loop()
+{
+	// ulaz: referenca za brzine levog i desnog: v_ref_, w_ref_
+	double v_err = v_ref_ - get_v();
+	double w_err = w_ref_ - get_w();
+	v_ctrl_ = calc_pid(&v_loop, v_err);
+	w_ctrl_ = calc_pid(&w_loop, w_err);
+
+	// izlaz pwm
+	v_right_ = v_ctrl_ + w_ctrl_ * L_ * 0.5;
+	v_left_ = v_ctrl_ - w_ctrl_ * L_ * 0.5;
+	double scale_factor = scale_vel_ref(&v_right_, &v_left_, MOTOR_V_MAX_);
+	v_right_ *= scale_factor;
+	v_left_ *= scale_factor;
+	pwm_right(v_right_);
+	pwm_left(v_left_);
 }
 
 double get_v_r() {
@@ -327,7 +345,7 @@ static void reset_goal(goal_type *goal_ptr) {
 	goal_ptr->start_coeff_w = 1.0;
 	goal_ptr->stop_coeff_v = 1.0;
 	goal_ptr->stop_coeff_w = 1.0;
-	goal_ptr->status = 10;
+	goal_ptr->status = 0;
 }
 
 static void reset_movement() {
@@ -349,4 +367,6 @@ static void reset_movement() {
 	phi_tol_perc_ = 1.0;
 	reg_type_ = 0;
 	reg_phase_ = 0;
+	reset_pid(&v_loop);
+	reset_pid(&w_loop);
 }

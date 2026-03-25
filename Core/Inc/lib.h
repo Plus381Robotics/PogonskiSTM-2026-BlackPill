@@ -17,6 +17,21 @@
 #include "gpio.h"
 #include "usart.h"
 
+typedef struct st_pid {
+	float p;
+	float i;
+	float d;
+	float lmt;
+	float ctrl;
+	float ctrl_p;
+	float ctrl_pp;
+	float err_p;
+	float err_sum;
+	float err_dif;
+	float sum_lmt;
+
+} pid;
+
 typedef struct goal_struct {
 	int8_t type;
 	double x;
@@ -35,6 +50,17 @@ typedef struct goal_struct {
 	double distance_remaininig;
 	double angle_remaining;
 } goal_type;
+
+// pid.h
+float
+calc_pid(volatile pid *pid_ptr, float err);
+float
+calc_pid_2(volatile pid *pid_ptr, float ref, float val);
+void
+init_pid(volatile pid *pid_ptr, float p, float i, float d, float limit,
+		float sum_limit);
+void
+reset_pid(volatile pid *pid_ptr);
 
 // time.h
 void

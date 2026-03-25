@@ -30,7 +30,7 @@ void pwm_left(float vel) {
 	int16_t pwm;
 	int8_t dir = sign(vel);
 	set_motor_l_dir(dir);
-	pwm = fabs(vel) / max_v * 1680;
+	pwm = clamp(fabs(vel) / max_v * 1680, 0, 1680);
 	pwm_set_dc(&htim9, TIM_CHANNEL_1, pwm);
 }
 
@@ -38,7 +38,7 @@ void pwm_right(float vel) {
 	int16_t pwm;
 	int8_t dir = sign(vel);
 	set_motor_r_dir(dir);
-	pwm = fabs(vel) / max_v * 1680;
+	pwm = clamp(fabs(vel) / max_v * 1680, 0, 1680);
 	pwm_set_dc(&htim9, TIM_CHANNEL_2, pwm);
 
 }
