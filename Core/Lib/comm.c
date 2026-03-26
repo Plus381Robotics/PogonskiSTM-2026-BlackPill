@@ -26,8 +26,8 @@ volatile static uint8_t idx = 0;
 volatile float x, y, phi;
 
 volatile goal_type rx_goal;
-double x_dbg = 1.0, y_dbg = 0.0, phi_dbg = -0.785;
-int8_t type_dbg = -1;
+double x_dbg = 0.0, y_dbg = 1.5, phi_dbg = 1.5708;
+int8_t type_dbg = 1;
 /*
  * ROS2 -> STM32:
  * 40B:
@@ -110,7 +110,7 @@ void update_tx_buffer() {
 	memcpy(&tx_buffer[25], &phi_dbg, sizeof(double));
 	tx_buffer[33] = 1;      // direction
 	tx_buffer[34] = 150;    // v_max_100
-	tx_buffer[35] = 94;     // w_max_10
+	tx_buffer[35] = 150;     // w_max_10
 	tx_buffer[36] = 0xff; 	// tol_perc_16
 	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
 

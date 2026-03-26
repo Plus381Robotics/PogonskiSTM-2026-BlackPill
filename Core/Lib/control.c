@@ -54,9 +54,9 @@ void move_init() {
 	STACKED_TIME_ = 100.0;
 
 	dt_ = 0.001;
-	V_MIN_ = 0.1;
-	V_MAX_ = 1.5;
-	V_MIN_ACC_ = 0.6;
+	V_MIN_ = 0.05;
+	V_MAX_ = 2.0;
+	V_MIN_ACC_ = 0.5;
 	W_MIN_ = 0.314;
 	W_MAX_ = 12.57;
 	W_MIN_ACC_ = 3.14;
@@ -66,15 +66,15 @@ void move_init() {
 	L_MAX_ = 0.1935;
 	L_MIN_ = 0.1155;
 	eta_ = 0.01;
-	P_w_ = 2.0;
-	J_MAX_ = 25.0;
-	J_MAX_STOP_ = 50.0;
+	P_w_ = 16.0;
+	J_MAX_ = 32.0;
+	J_MAX_STOP_ = 24.0;
 	J_ROT_MAX_ = 800.0;
 	J_ROT_MAX_STOP_ = 800.0;
 	D_TOL_ = 0.005; // absolute distance from target
-	D_PROJ_TOL_ = 0.0025; // projected distance from target
-	D_LONG_TOL_ = 0.1; // distance before rotation is used fully
-	D_SHORT_TOL_ = 0.05; // minimal distance for rotation during translation
+	D_PROJ_TOL_ = 0.005; // projected distance from target
+	D_LONG_TOL_ = 0.2; // distance before rotation is used fully
+	D_SHORT_TOL_ = 0.1; // minimal distance for rotation during translation
 	PHI_TOL_ = 0.0157; // absolute angle from target
 
 	v_max_temp_ = V_MAX_;
@@ -82,7 +82,7 @@ void move_init() {
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 16.0, 0.0, 0.0, 1680, 1680);
+	init_pid(&v_loop, 10.0, 0.01, 0.0, 1680, 840);
 	init_pid(&w_loop, 20.0, 0.02, 0.0, 1680, 840);
 }
 
