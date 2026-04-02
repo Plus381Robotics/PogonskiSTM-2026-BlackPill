@@ -101,7 +101,14 @@ void process_rx_buffer() {
 	// TODO: vrati ovo (al ne radi sad)
 //	rx_goal.obstacle = (rxba[25]) && 0b111111;
 	rx_goal.obstacle = 0;
-	rx_goal.direction = (rxba[25]) >> 6;
+	uint8_t dir_bits = (rxba[25] >> 6) & 0b11;
+
+	if (dir_bits == 0b01)
+	    rx_goal.direction = 1;
+	else if (dir_bits == 0b10)
+	    rx_goal.direction = -1;
+	else
+	    rx_goal.direction = 0;
 	uint8_t v_max_100 = rxba[26];
 	rx_goal.v_max = v_max_100 * 0.01;
 	uint8_t w_max_10 = rxba[27];
