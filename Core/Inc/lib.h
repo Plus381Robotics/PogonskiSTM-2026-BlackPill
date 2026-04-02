@@ -37,6 +37,7 @@ typedef struct goal_struct {
 	double x;
 	double y;
 	double phi;
+	int8_t obstacle;
 	int8_t direction;
 	double v_max;
 	double w_max;

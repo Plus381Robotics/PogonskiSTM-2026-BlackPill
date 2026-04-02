@@ -264,6 +264,12 @@ static void go_to_xy() {
 }
 
 void move_goal(goal_type *goal) {
+	uint8_t new_obstacle = goal->obstacle;
+	if (new_obstacle != obstacle_)
+	  obstacle_status_changed_ = 1;
+	else
+	  obstacle_status_changed_ = 0;
+	obstacle_ = new_obstacle;
 	goal->status = movement_state_;
 	if (goal->status < 0)
 		reset_goal(goal);

@@ -36,7 +36,8 @@ int8_t type_dbg = 1;
  * 	 double x
  * 	 double y
  * 	 double phi
- * 	 int8 	direction
+ * 	 int8 	obstacle	:6
+ * 	 		direction 	:2
  * 	 uint8 	v_max_100				[0.00, 2.55]
  * 	 uint8 	w_max_10				[0.0, 25.5]
  * 	 uint8 	dis_tol_perc_16: 4	[0.0, 1.0 : 0.0625]
@@ -77,7 +78,8 @@ void process_rx_buffer() {
 	memcpy(&rx_goal.y, &rxba[9], sizeof(double));
 	memcpy(&rx_goal.phi, &rxba[17], sizeof(double));
 
-	rx_goal.direction = rxba[25];
+	rx_goal.obstacle = (rxba[25]) && 0b111111;
+	rx_goal.direction = (rxba[25]) >> 6;
 	uint8_t v_max_100 = rxba[26];
 	rx_goal.v_max = v_max_100 * 0.01;
 	uint8_t w_max_10 = rxba[27];
