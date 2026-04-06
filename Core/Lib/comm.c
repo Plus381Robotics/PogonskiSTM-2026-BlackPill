@@ -65,44 +65,45 @@ void process_rx_buffer() {
 		return;
 
 	rx_goal.obstacle = (rxba[25]) & 0b011;
-	rx_goal.type = rxba[0];
-	if (rx_goal.type == 0)
-		reset_goal(&rx_goal);
+	int8_t type = rxba[0];
 
 	uint16_t received_checksum = rxba[30] | (rxba[31] << 8);
-	uint16_t calculated_checksum = fletcher16(rxba, 30);
 
-	if (prev_checksum == calculated_checksum)
-		return;
-	if (received_checksum != calculated_checksum) {
-		// checksum failed
-//		return;
-	}
-
+	// ide kretnja vec ide
 	if (rx_goal.status > 0)
 		return;
 
-	memcpy(&rx_goal.x, &rxba[1], sizeof(double));
-	memcpy(&rx_goal.y, &rxba[9], sizeof(double));
-	memcpy(&rx_goal.phi, &rxba[17], sizeof(double));
+	// ako ponovo dobije istu kretnju
+	if (prev_checksum == received_checksum)
+		return;
 
-	double dx = rx_goal.x - get_x();
-	double dy = rx_goal.y - get_y();
-	double dist2 = dx * dx + dy * dy;
+	double x, y, phi;
+	memcpy(&x, &rxba[1], sizeof(double));
+	memcpy(&y, &rxba[9], sizeof(double));
+	memcpy(&phi, &rxba[17], sizeof(double));
 
-	double dphi = rx_goal.phi - get_phi();
+	double dx = x - get_x();
+	double dy = y - get_y();
+	double dist2 = sqrt(dx * dx + dy * dy);
+
+	double dphi = phi - get_phi();
 	while (dphi > M_PI)
 		dphi -= 2 * M_PI;
 	while (dphi < -M_PI)
 		dphi += 2 * M_PI;
 
 	// Skip goal if already reached
-	if ((rx_goal.type == 1 && dist2 < D_TOL_ * D_TOL_)
-			|| (rx_goal.type == -1 && fabs(dphi) < PHI_TOL_)) {
+	if ((type == 1 && dist2 < D_TOL_)
+			|| (type == -1 && fabs(dphi) < PHI_TOL_)) {
+//		reset_goal(&rx_goal);
+//		prev_checksum = received_checksum;
 		return;
 	}
-	rx_goal.status = 0;
 
+	rx_goal.type = type;
+	rx_goal.x = x;
+	rx_goal.y = y;
+	rx_goal.phi = phi;
 	uint8_t dir_bits = (rxba[25] >> 6) & 0b11;
 
 	if (dir_bits == 0b01)
@@ -116,16 +117,23 @@ void process_rx_buffer() {
 	uint8_t w_max_10 = rxba[27];
 	rx_goal.w_max = w_max_10 * 0.1;
 	// TODO: ovde sam zapravo na pogresnu stranu racunao ovo, tako da za sad zanemari, pa ako treba ispravljaj
-	uint8_t tol_byte = rxba[28];
-	rx_goal.distance_tolerance_percentage = (((tol_byte >> 4) & 0b1111) + 1)
-			* 0.0625;
-	rx_goal.angle_tolerance_percentage = (((tol_byte) & 0b1111) + 1) * 0.0625;
-	uint8_t coeff_byte = rxba[29];
-	rx_goal.start_coeff_v = (((coeff_byte >> 6) & 0b11) + 1) * 0.25;
-	rx_goal.start_coeff_w = (((coeff_byte >> 4) & 0b11) + 1) * 0.25;
-	rx_goal.stop_coeff_v = (((coeff_byte >> 2) & 0b11) + 1) * 0.25;
-	rx_goal.stop_coeff_w = (((coeff_byte) & 0b11) + 1) * 0.25;
+//	uint8_t tol_byte = rxba[28];
+//	rx_goal.distance_tolerance_percentage = (((tol_byte >> 4) & 0b1111) + 1)
+//			* 0.0625;
+//	rx_goal.angle_tolerance_percentage = (((tol_byte) & 0b1111) + 1) * 0.0625;
+//	uint8_t coeff_byte = rxba[29];
+//	rx_goal.start_coeff_v = (((coeff_byte >> 6) & 0b11) + 1) * 0.25;
+//	rx_goal.start_coeff_w = (((coeff_byte >> 4) & 0b11) + 1) * 0.25;
+//	rx_goal.stop_coeff_v = (((coeff_byte >> 2) & 0b11) + 1) * 0.25;
+//	rx_goal.stop_coeff_w = (((coeff_byte) & 0b11) + 1) * 0.25;
+	rx_goal.distance_tolerance_percentage = 1.0;
+	rx_goal.angle_tolerance_percentage = 1.0;
+	rx_goal.start_coeff_v = 1.0;
+	rx_goal.start_coeff_w = 1.0;
+	rx_goal.stop_coeff_v = 1.0;
+	rx_goal.stop_coeff_w = 1.0;
 	prev_checksum = received_checksum;
+	rx_goal.status = 0;
 	return;
 }
 
@@ -149,7 +157,10 @@ void update_tx_buffer() {
 //	tx_buffer[36] = 0xff; 	// tol_perc_16
 //	tx_buffer[37] = 0xff; 	// start/stop coeffs = 1
 
-	tx_buffer[8] = rx_goal.status;
+	if (rx_goal.type != 0)
+		tx_buffer[8] = rx_goal.status;
+	else
+		tx_buffer[8] = 0;
 	int32_t x = (int32_t) (get_x() * 10000.0);
 	int32_t y = (int32_t) (get_y() * 10000.0);
 	int32_t phi = (int32_t) (get_phi() * 10000.0);
@@ -170,6 +181,7 @@ void update_tx_buffer() {
 	huart1.gState = HAL_UART_STATE_READY;
 	__HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TC);
 	HAL_UART_Transmit_DMA(&huart1, (uint8_t*) tx_buffer, TXBUFFERSIZE);
+
 	if (rx_goal.status < 0)
 		reset_goal(&rx_goal);
 }

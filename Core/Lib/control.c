@@ -60,7 +60,7 @@ void move_init() {
 	STACKED_TIME_ = 2.0;
 
 	dt_ = 0.001;
-	V_MIN_ = 0.05;
+	V_MIN_ = 0.1;
 	V_MAX_ = 1.5;
 	V_MIN_ACC_ = 0.5;
 	W_MIN_ = 0.314;
@@ -72,15 +72,15 @@ void move_init() {
 	L_MAX_ = 0.1935;
 	L_MIN_ = 0.1155;
 	eta_ = 0.01;
-	P_w_ = 15.0;
-	J_MAX_ = 10.0;
-	J_MAX_STOP_ = 10.0;
+	P_w_ = 10.0;
+	J_MAX_ = 16.0;
+	J_MAX_STOP_ = 16.0;
 	J_ROT_MAX_ = 60.0;
 	J_ROT_MAX_STOP_ = 60.0;
-	D_TOL_ = 0.01; // absolute distance from target
-	D_PROJ_TOL_ = 0.005; // projected distance from target
-	D_LONG_TOL_ = 0.1; // distance before rotation is used fully
-	D_SHORT_TOL_ = 0.02; // minimal distance for rotation during translation
+	D_TOL_ = 0.02; // absolute distance from target
+	D_PROJ_TOL_ = 0.01; // projected distance from target
+	D_LONG_TOL_ = 0.08; // distance before rotation is used fully
+	D_SHORT_TOL_ = 0.03; // minimal distance for rotation during translation
 	PHI_TOL_ = 0.0157; // absolute angle from target
 
 	v_max_temp_ = V_MAX_;
@@ -89,7 +89,7 @@ void move_init() {
 	j_rot_max_temp_ = J_ROT_MAX_;
 
 	init_pid(&v_loop, 12.0, 0.01, 0.0, 1680, 420);
-	init_pid(&w_loop, 16.0, 0.02, 0.0, 1680, 560);
+	init_pid(&w_loop, 12.0, 0.02, 0.0, 1680, 420);
 }
 
 void control_loop() {
@@ -107,6 +107,7 @@ void control_loop() {
 	case 0:
 		v_ref_ = 0;
 		w_ref_ = 0;
+		reset_movement();
 		break;
 	case 1:
 		go_to_xy();
@@ -275,7 +276,7 @@ static void go_to_xy() {
 
 		if (distance_proj_ < D_PROJ_TOL_ * d_tol_perc_
 				&& fabs(get_v()) < V_MIN_ * 2.0
-				&& fabs(w_base_) < W_MIN_ * 2.0) {
+				&& fabs(get_w()) < W_MIN_ * 2.0) {
 			if (fabs(distance_) < D_TOL_ * d_tol_perc_) {
 				movement_state_ = -1;
 			} else {
@@ -300,7 +301,11 @@ void move_goal(goal_type *goal) {
 		obstacle_status_changed_ = 0;
 	obstacle_ = new_obstacle;
 	goal->status = movement_state_;
-	if (goal->status == 0 && goal->type != 0) {
+	if (goal->type == 0)
+	{
+		reset_movement();
+	}
+	else if (goal->status == 0) {
 		goal->status = 1;
 		x_base_ = get_x();
 		y_base_ = get_y();
@@ -323,15 +328,9 @@ void move_goal(goal_type *goal) {
 			phi_ref_ = goal->phi;
 			reg_type_ = -1;
 			break;
-			// Rotate to XY
-		case -2:
-			x_ref_ = x_base_;
-			y_ref_ = y_base_;
-			phi_ref_ = wrap(
-					atan2(goal->y - y_base_, goal->x - x_base_)
-							+ (goal->direction - 1) * M_PI * 0.5, -M_PI, M_PI);
-			reg_type_ = -1;
-			break;
+		// Reset
+		case 0:
+			reset_goal(goal);
 			// Move to XY
 		case 1:
 			x_ref_ = goal->x;
@@ -339,35 +338,10 @@ void move_goal(goal_type *goal) {
 			phi_ref_ = 0.0;
 			reg_type_ = 1;
 			break;
-			// Move on Direction
-		case 2:
-			x_ref_ = x_base_ + goal->direction * goal->y * cos(phi_base_);
-			y_ref_ = y_base_ + goal->direction * goal->y * sin(phi_base_);
-			phi_ref_ = phi_base_;
-			reg_type_ = 1;
-			break;
-			// Move on Direction Snapped
-		case 3:
-			x_ref_ = x_base_
-					+ goal->direction * goal->y
-							* cos(snap_angle(phi_base_, goal->phi));
-			y_ref_ = y_base_
-					+ goal->direction * goal->y
-							* sin(snap_angle(phi_base_, goal->phi));
-			phi_ref_ = snap_angle(phi_base_, goal->phi);
-			reg_type_ = 1;
-			break;
-			// Move on Angle
-		case 4:
-			x_ref_ = x_base_ + goal->direction * goal->y * cos(goal->phi);
-			y_ref_ = y_base_ + goal->direction * goal->y * sin(goal->phi);
-			phi_ref_ = goal->phi;
-			reg_type_ = 1;
-			break;
 		}
 	}
 }
-
+//mqjmune
 void reset_goal(goal_type *goal_ptr) {
 	reset_movement();
 	goal_ptr->type = 0;
