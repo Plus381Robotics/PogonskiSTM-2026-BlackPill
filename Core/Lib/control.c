@@ -57,7 +57,7 @@ uint8_t get_set_goal_reset() {
 
 void move_init() {
 // TODO: vrati na 0.5 ili manje
-	STACKED_TIME_ = 2.0;
+	STACKED_TIME_ = 0.5;
 
 	dt_ = 0.001;
 	V_MIN_ = 0.1;
@@ -72,7 +72,7 @@ void move_init() {
 	L_MAX_ = 0.1935;
 	L_MIN_ = 0.1155;
 	eta_ = 0.01;
-	P_w_ = 10.0;
+	P_w_ = 12.0;
 	J_MAX_ = 16.0;
 	J_MAX_STOP_ = 16.0;
 	J_ROT_MAX_ = 60.0;
@@ -89,7 +89,7 @@ void move_init() {
 	j_rot_max_temp_ = J_ROT_MAX_;
 
 	init_pid(&v_loop, 12.0, 0.01, 0.0, 1680, 420);
-	init_pid(&w_loop, 12.0, 0.02, 0.0, 1680, 420);
+	init_pid(&w_loop, 12.0, 0.02, 0.0, 1680, 560);
 }
 
 void control_loop() {
