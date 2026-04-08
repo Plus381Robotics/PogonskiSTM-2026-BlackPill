@@ -81,24 +81,24 @@ void process_rx_buffer() {
 	memcpy(&x, &rxba[1], sizeof(double));
 	memcpy(&y, &rxba[9], sizeof(double));
 	memcpy(&phi, &rxba[17], sizeof(double));
-
-	double dx = x - get_x();
-	double dy = y - get_y();
-	double dist2 = sqrt(dx * dx + dy * dy);
-
-	double dphi = phi - get_phi();
-	while (dphi > M_PI)
-		dphi -= 2 * M_PI;
-	while (dphi < -M_PI)
-		dphi += 2 * M_PI;
-
-	// Skip goal if already reached
-	if ((type == 1 && dist2 < D_TOL_)
-			|| (type == -1 && fabs(dphi) < PHI_TOL_)) {
-//		reset_goal(&rx_goal);
-//		prev_checksum = received_checksum;
-		return;
-	}
+//
+//	double dx = x - get_x();
+//	double dy = y - get_y();
+//	double dist2 = sqrt(dx * dx + dy * dy);
+//
+//	double dphi = phi - get_phi();
+//	while (dphi > M_PI)
+//		dphi -= 2 * M_PI;
+//	while (dphi < -M_PI)
+//		dphi += 2 * M_PI;
+//
+//	// Skip goal if already reached
+//	if ((type == 1 && dist2 < D_TOL_)
+//			|| (type == -1 && fabs(dphi) < PHI_TOL_)) {
+////		reset_goal(&rx_goal);
+////		prev_checksum = received_checksum;
+//		return;
+//	}
 
 	rx_goal.type = type;
 	rx_goal.x = x;

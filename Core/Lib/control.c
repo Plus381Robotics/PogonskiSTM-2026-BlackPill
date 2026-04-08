@@ -65,21 +65,21 @@ void move_init() {
 	V_MIN_ACC_ = 1.0;
 	W_MIN_ = 0.314;
 	W_MAX_ = 12.57;
-	W_MIN_ACC_ = 1.57;
+	W_MIN_ACC_ = 3.14;
 	V_SLOWED_MAX_ = 0.75;
 	MOTOR_V_MAX_ = 1.6;
 	L_ = 0.1545;
 	L_MAX_ = 0.1935;
 	L_MIN_ = 0.1155;
 	eta_ = 0.01;
-	P_w_ = 12.0;
-	J_MAX_ = 16.0;
+	P_w_ = 6.0;
+	J_MAX_ = 12.0;
 	J_MAX_STOP_ = 16.0;
-	J_ROT_MAX_ = 600.0;
-	J_ROT_MAX_STOP_ = 320.0;
+	J_ROT_MAX_ = 50.0;
+	J_ROT_MAX_STOP_ = 50.0;
 	D_TOL_ = 0.02; // absolute distance from target
 	D_PROJ_TOL_ = 0.005; // projected distance from target
-	D_LONG_TOL_ = 0.08; // distance before rotation is used fully
+	D_LONG_TOL_ = 0.12; // distance before rotation is used fully
 	D_SHORT_TOL_ = 0.03; // minimal distance for rotation during translation
 	PHI_TOL_ = 0.0157; // absolute angle from target
 
@@ -89,7 +89,7 @@ void move_init() {
 	j_rot_max_temp_ = J_ROT_MAX_;
 
 	init_pid(&v_loop, 12.0, 0.01, 0.0, 1680, 420);
-	init_pid(&w_loop, 16.0, 0.02, 0.0, 1680, 420);
+	init_pid(&w_loop, 17.0, 0.08, 0.0, 1680, 420);
 }
 
 void control_loop() {
@@ -183,7 +183,7 @@ static void rotate() {
 				pow(fabs(phi_error_) / (starting_angle_ + stopping_angle_),
 						2.0 / 3.0), 0.0, 1.0);
 
-		W_MIN_ACC_temp_ = clamp(slowing_coeff_, 0.5, 1.0) * W_MIN_ACC_;
+		W_MIN_ACC_temp_ = clamp(slowing_coeff_, 0.6, 1.0) * W_MIN_ACC_;
 		w_max_temp_ *= slowing_coeff_;
 		stopping_angle_ = 5 * pow(w_max_temp_, 1.5) / 3 / sqrt(J_ROT_MAX_STOP_)
 				* stopping_coeff_w_;
@@ -201,7 +201,7 @@ static void go_to_xy() {
 	if (movement_state_ == 0) {
 		movement_state_ = 1;
 	}
-	double W_MIN_ACC_temp_;
+	double W_MIN_ACC_temp_ = W_MIN_ACC_;
 
 	x_error_ = x_ref_ - x_base_;
 	y_error_ = y_ref_ - y_base_;
@@ -236,8 +236,6 @@ static void go_to_xy() {
 			reg_phase_ = 2;
 			w_max_temp_ = W_MAX_;
 		}
-		if (W_MIN_ACC_temp_ < 0.2)
-			W_MIN_ACC_temp_ = W_MIN_ACC_;
 		v_ref_ = 0;
 		w_ref_ = velocity_synthesis(phi_error_, w_base_, alpha_,
 				j_rot_max_temp_, stopping_angle_, w_max_temp_, W_MIN_, dt_, 0.0,
