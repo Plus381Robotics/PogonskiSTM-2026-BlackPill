@@ -21,6 +21,7 @@ void pwm_init() {
 void pwm_kill() {
 	HAL_TIM_PWM_Stop(&htim9, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Stop(&htim9, TIM_CHANNEL_2);
+	HAL_TIM_PWM_DeInit(&htim9);
 }
 
 int8_t sign(float x) {

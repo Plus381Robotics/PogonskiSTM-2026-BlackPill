@@ -93,8 +93,8 @@ void move_init() {
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 12.0, 0.01, 0.0, 1680, 420);
-	init_pid(&w_loop, 120.0, 0.02, 20.0, 1680, 420); // bilo 52, 0.02, 2.8, 420
+	init_pid(&v_loop, 12.0, 0.01, 1.0, 1680, 420);
+	init_pid(&w_loop, 80.0, 0.024, 20.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
@@ -400,7 +400,8 @@ static void reset_movement() {
 }
 
 static void kill_movement() {
-//	pwm_kill();
+	time_stop();
+	pwm_kill();
 	movement_state_ = 0;
 	stacked_cnt_ = 0;
 	x_ref_ = x_base_;
