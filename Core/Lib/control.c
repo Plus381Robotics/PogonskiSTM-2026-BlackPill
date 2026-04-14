@@ -62,24 +62,24 @@ void move_init() {
 	STACKED_TIME_ = 0.04;
 
 	dt_ = 0.001;
-	V_MIN_ = 0.1;
-	V_MAX_ = 1.5;
+	V_MIN_ = 0.125;
+	V_MAX_ = 1.75;
 	V_MIN_ACC_ = 1.0;
 	V_MIN_STACKED_ = 0.01;
 	W_MIN_ = 0.314;
 	W_MAX_ = 12.57;
 	W_MIN_ACC_ = 2.0;
 	V_SLOWED_MAX_ = 0.75;
-	MOTOR_V_MAX_ = 1.6;
+	MOTOR_V_MAX_ = 1.75;
 	L_ = 0.1545;
-	//	L_MAX_ = 0.1935;
-	//	L_MIN_ = 0.1155;
+//		L_MAX_ = 0.1935;
+//		L_MIN_ = 0.1155;
 	L_MAX_ = 0.1545;
 	L_MIN_ = 0.1545;
 	eta_ = 0.01;
 	P_w_ = 16.0;
-	J_MAX_ = 15.0;
-	J_MAX_STOP_ = 15.0;
+	J_MAX_ = 24.0;
+	J_MAX_STOP_ = 16.0;
 	J_ROT_MAX_ = 900.0;
 	J_ROT_MAX_STOP_ = 560.0;
 	D_TOL_ = 0.02; // absolute distance from target
@@ -120,8 +120,10 @@ void control_loop() {
 		break;
 	}
 
-	if (obstacle_ == 1)
+	if (obstacle_ == 1){
 		v_ref_ = 0.0;
+		reset_pid(&v_loop);
+	}
 
 	velocity_loop();
 
@@ -280,7 +282,7 @@ static void go_to_xy() {
 				movement_state_ = -1;
 				break;
 			} else {
-				movement_state_ = -2;
+				movement_state_ = -5;
 				break;
 			}
 		} else if (obstacle_ == 1 && fabs(v_base_) < V_MIN_ * 2.0
