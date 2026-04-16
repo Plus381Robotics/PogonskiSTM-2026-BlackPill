@@ -81,7 +81,7 @@ void move_init() {
 //	P_w_ = 16.0;
 	P_w_ = 18.0;
 	J_MAX_ = 36.0;
-	J_MAX_STOP_ = 20.0;
+	J_MAX_STOP_ = 16.0;
 	J_ROT_MAX_ = 2400.0;
 	J_ROT_MAX_STOP_ = 300.0;
 	D_TOL_ = 0.02; // absolute distance from target
