@@ -425,6 +425,12 @@ void move_goal(goal_type *goal) {
 			phi_ref_ = 0.0;
 			reg_type_ = 1;
 			break;
+		case 2:
+			x_ref_ = goal->x;
+			y_ref_ = goal->y;
+			phi_ref_ = goal->phi;
+			reg_type_ = 2;
+			break;
 		}
 	}
 	prev_type = goal->type;
