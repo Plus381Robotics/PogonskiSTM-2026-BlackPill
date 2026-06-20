@@ -52,6 +52,30 @@ typedef struct goal_struct {
 	double angle_remaining;
 } goal_type;
 
+typedef struct vec2_struct {
+	double x, y;
+}vec2;
+
+typedef struct bezier_struct {
+	vec2 P0;
+	vec2 P1;
+	vec2 P2;
+	vec2 P3;
+}bezier;
+
+// bezier.h
+void init_bezier(bezier *bezier_ptr, double x0, double y0, double phi0,
+		double x3, double y3, double phi3, double tangent_scale);
+vec2 P(bezier *bezier_ptr, double s);
+double dx(bezier *bezier_ptr, double s);
+double dy(bezier *bezier_ptr, double s);
+vec2 T_norm(bezier *bezier_ptr, double s);
+vec2 N_norm(bezier *bezier_ptr, double s);
+double K(bezier *bezier_ptr, double s);
+double Frenet(bezier *bezier_ptr, double x, double y, double s0);
+double s(bezier *bezier_ptr, double x, double y, double phi, double v,
+		double s_prev, double dt, double alpha);
+
 // pid.h
 float
 calc_pid(volatile pid *pid_ptr, float err);

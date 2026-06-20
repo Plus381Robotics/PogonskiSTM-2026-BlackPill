@@ -9,6 +9,7 @@
 
 static void reset_movement();
 static void rotate();
+static void curve_controller();
 static void go_to_xy();
 void reset_goal(goal_type *goal_ptr);
 static void velocity_loop();
@@ -54,6 +55,12 @@ volatile pid v_loop, w_loop;
 int8_t prev_type = 0;
 uint8_t obst_f_ = 0, obst_b_ = 0;
 int8_t obst_in_loop_budz_ = 0;
+
+bezier *ctrl_bezier_;
+double s_, prev_K_;
+double dir_phi_offset = 0.0;
+// TODO: namesti parametre:
+double L_drive_ = 0.18, k_heading_ = 10.0, k_lateral_ = 10.0;
 
 uint8_t get_set_goal_reset() {
 	return set_goal_reset;
@@ -122,6 +129,9 @@ void control_loop() {
 	case 1:
 		go_to_xy();
 		break;
+	case 2:
+		curve_controller();
+		break;
 	}
 
 	if ((obst_f_ && direction_ == 1) || (obst_b_ && direction_ == -1)) {
@@ -176,6 +186,54 @@ double get_v_r() {
 
 double get_v_l() {
 	return v_left_;
+}
+
+static void curve_controller() {
+	// Init
+	if (movement_state_ == 0) {
+		movement_state_ = 1;
+		dir_phi_offset = (direction_ - 1) * M_PI * 0.5;
+		init_bezier(ctrl_bezier_, x_base_, y_base_, phi_base_, x_ref_, y_ref_,
+				phi_ref_, 1.0);
+		s_ = 0.0;
+		prev_K_ = K(ctrl_bezier_, s_);
+	}
+	// Position on the curve
+	s_ = s(ctrl_bezier_, x_base_, y_base_, phi_base_ + dir_phi_offset, v_base_,
+			s_, dt_, 0.1);
+	// distance calc budz
+	x_error_ = x_ref_ - x_base_;
+	y_error_ = y_ref_ - y_base_;
+	distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);
+	// End condition
+	if (s_ >= 1.0)	// Dodatni uslovi
+		movement_state_ = -1;
+	// Curve params
+	vec2 P_cur = P(ctrl_bezier_, s_);
+	vec2 T_cur = T_norm(ctrl_bezier_, s_);
+	double K_cur = K(ctrl_bezier_, s_);
+//	vec2 N_cur = N_norm(ctrl_bezier_, s_);
+	double kdot = (K_cur - prev_K_) / dt_;
+	// Linear velocity reference
+	double v_ff = v_max_temp_
+			/ fmax(fabs(1 + L_drive_ / 2 * K_cur),
+					fabs(1 - L_drive_ / 2 * K_cur));
+	double v_stop = velocity_synthesis(distance_ * direction_, v_base_, a_,
+			j_max_temp_, stopping_distance_, v_max_temp_, V_MIN_, dt_, 0.0, 0.0,
+			V_SLOWED_MAX_, V_MIN_ACC_);
+	double a = j_max_temp_ * dt_;
+	double v_kdot = (2.0 * a) / (L_drive_ * fabs(kdot) + 1e-9);
+	v_ref_ = min3(v_ff, v_stop, v_kdot) * direction_;
+	// Angular velocity reference
+	double w_ff = fabs(v_ref_) * K_cur;
+	double ex = x_base_ - P_cur.x;
+	double ey = y_base_ - P_cur.y;
+	double e_lateral = ex * T_cur.y - ey * T_cur.x;
+	double cur_phi_ref = atan2(T_cur.y, T_cur.x) + dir_phi_offset;
+	double e_heading = wrap(cur_phi_ref - phi_base_, -M_PI, M_PI);
+	double w_fb = k_heading_ * e_heading + k_lateral_ * e_lateral * v_ref_;
+	w_ref_ = w_ff + w_fb;
+	prev_K_ = K_cur;
 }
 
 static void rotate() {
