@@ -86,11 +86,11 @@ void move_init() {
 	L_MIN_ = 0.1545;
 //	eta_ = 0.01;
 //	P_w_ = 16.0;
-	P_w_ = 18.0;
-	J_MAX_ = 36.0;
-	J_MAX_STOP_ = 20.0;
-	J_ROT_MAX_ = 2400.0;
-	J_ROT_MAX_STOP_ = 300.0;
+	P_w_ = 10.0;
+	J_MAX_ = 24.0;
+	J_MAX_STOP_ = 15.0;
+	J_ROT_MAX_ = 810.0;
+	J_ROT_MAX_STOP_ = 200.0;
 	D_TOL_ = 0.02; // absolute distance from target
 	D_PROJ_TOL_ = 0.005; // projected distance from target
 	D_LONG_TOL_ = 0.12; // distance before rotation is used fully
