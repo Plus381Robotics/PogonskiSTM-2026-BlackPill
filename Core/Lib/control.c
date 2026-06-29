@@ -102,8 +102,8 @@ void move_init() {
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 12.0, 0.01, 1.0, 1680, 420);
-	init_pid(&w_loop, 92.0, 0.025, 28.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
+	init_pid(&v_loop, 6.0, 0.005, 0.5, 1680, 420);
+	init_pid(&w_loop, 40.0, 0.01, 4.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
