@@ -56,11 +56,12 @@ int8_t prev_type = 0;
 uint8_t obst_f_ = 0, obst_b_ = 0;
 int8_t obst_in_loop_budz_ = 0;
 
-bezier *ctrl_bezier_;
+bezier bezier_var_;
+bezier *ctrl_bezier_ = &bezier_var_;
 double s_, prev_K_;
 double dir_phi_offset = 0.0;
 // TODO: namesti parametre:
-double L_drive_ = 0.18, k_heading_ = 10.0, k_lateral_ = 10.0;
+double L_drive_ = 0.18, k_heading_ = 1.0, k_lateral_ = 1.0;
 
 uint8_t get_set_goal_reset() {
 	return set_goal_reset;
@@ -72,11 +73,11 @@ void move_init() {
 	dt_ = 0.001;
 	V_MIN_ = 0.15;
 	V_MAX_ = 1.5;
-	V_MIN_ACC_ = 1.5;
+	V_MIN_ACC_ = 0.5;
 	V_MIN_STACKED_ = 0.01;
 	W_MIN_ = 0.628;
 	W_MAX_ = 12.57;
-	W_MIN_ACC_ = 12.57;
+	W_MIN_ACC_ = 3.14;
 	V_SLOWED_MAX_ = 0.75;
 	MOTOR_V_MAX_ = 1.6;
 	L_ = 0.1545;
@@ -102,8 +103,8 @@ void move_init() {
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 6.0, 0.005, 0.5, 1680, 420);
-	init_pid(&w_loop, 40.0, 0.01, 4.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
+	init_pid(&v_loop, 8.0, 0.005, 0.5, 1680, 420);
+	init_pid(&w_loop, 40.0, 0.01, 1.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
