@@ -54,14 +54,14 @@ typedef struct goal_struct {
 
 typedef struct vec2_struct {
 	double x, y;
-}vec2;
+} vec2;
 
 typedef struct bezier_struct {
 	vec2 P0;
 	vec2 P1;
 	vec2 P2;
 	vec2 P3;
-}bezier;
+} bezier;
 
 // bezier.h
 void init_bezier(bezier *bezier_ptr, double x0, double y0, double phi0,
@@ -72,6 +72,7 @@ double dy(bezier *bezier_ptr, double s);
 vec2 T_norm(bezier *bezier_ptr, double s);
 vec2 N_norm(bezier *bezier_ptr, double s);
 double K(bezier *bezier_ptr, double s);
+double Kdot(bezier *bezier_ptr, double s);
 double Frenet(bezier *bezier_ptr, double x, double y, double s0);
 double s(bezier *bezier_ptr, double x, double y, double phi, double v,
 		double s_prev, double dt, double alpha);
@@ -180,6 +181,9 @@ void process_rx_buffer();
 goal_type* get_rx_goal();
 
 // control.h
+void velocity_loop();
+double get_s();
+double get_distance();
 void control_loop();
 void move_init();
 double get_v_r();

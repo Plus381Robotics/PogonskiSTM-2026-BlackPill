@@ -96,6 +96,52 @@ double K(bezier *bezier_ptr, double s) {
 	return num / den;
 }
 
+double Kdot(bezier *bezier_ptr, double s) {
+	// First derivative (velocity) components
+	double dx1 = dx(bezier_ptr, s);
+	double dy1 = dy(bezier_ptr, s);
+
+	// Second derivative (acceleration) components
+	double u = 1 - s;
+	double dx2 = 6 * u
+			* (bezier_ptr->P2.x - 2 * bezier_ptr->P1.x + bezier_ptr->P0.x)
+			+ 6 * s
+					* (bezier_ptr->P3.x - 2 * bezier_ptr->P2.x
+							+ bezier_ptr->P1.x);
+	double dy2 = 6 * u
+			* (bezier_ptr->P2.y - 2 * bezier_ptr->P1.y + bezier_ptr->P0.y)
+			+ 6 * s
+					* (bezier_ptr->P3.y - 2 * bezier_ptr->P2.y
+							+ bezier_ptr->P1.y);
+
+	// Third derivative (jerk) components - constant for cubic bezier
+	double dx3 = 6
+			* (bezier_ptr->P3.x - 3 * bezier_ptr->P2.x + 3 * bezier_ptr->P1.x
+					- bezier_ptr->P0.x);
+	double dy3 = 6
+			* (bezier_ptr->P3.y - 3 * bezier_ptr->P2.y + 3 * bezier_ptr->P1.y
+					- bezier_ptr->P0.y);
+
+	// Cross products
+	double cross12 = dx1 * dy2 - dy1 * dx2;  // P' × P''
+	double cross13 = dx1 * dy3 - dy1 * dx3;  // P' × P'''
+	double cross23 = dx2 * dy3 - dy2 * dx3;  // P'' × P'''
+
+	// Dot product
+	double dot12 = dx1 * dx2 + dy1 * dy2;    // P' · P''
+
+	// Norms
+	double norm2 = dx1 * dx1 + dy1 * dy1;    // |P'|²
+	double norm = sqrt(norm2) + 1e-9;        // |P'|
+	double norm3 = norm2 * norm;             // |P'|³
+	double norm5 = norm3 * norm2;            // |P'|⁵
+
+	// dK/ds = (P'' × P''' + P' × P''') / |P'|³ - 3(P' × P'')(P' · P'') / |P'|⁵
+	double dK_ds = (cross23 + cross13) / norm3 - 3.0 * cross12 * dot12 / norm5;
+
+	return dK_ds;
+}
+
 double Frenet(bezier *bezier_ptr, double x, double y, double s0) {
 	double s = s0;
 	for (uint8_t i = 0; i < FRENET_ITERATIONS; i++) {

@@ -12,7 +12,6 @@ static void rotate();
 static void curve_controller();
 static void go_to_xy();
 void reset_goal(goal_type *goal_ptr);
-static void velocity_loop();
 static void disassemble();
 
 uint8_t set_goal_reset = 0;
@@ -61,19 +60,27 @@ bezier *ctrl_bezier_ = &bezier_var_;
 double s_, prev_K_;
 double dir_phi_offset = 0.0;
 // TODO: namesti parametre:
-double L_drive_ = 0.18, k_heading_ = 1.0, k_lateral_ = 1.0;
+double L_drive_ = 0.18, k_heading_ = 6.0, k_lateral_ = 6.0;
 
 uint8_t get_set_goal_reset() {
 	return set_goal_reset;
 }
 
+double get_s() {
+	return s_;
+}
+
+double get_distance() {
+	return distance_;
+}
+
 void move_init() {
 	STACKED_TIME_ = 0.06;
 
-	dt_ = 0.001;
+	dt_ = 0.002;
 	V_MIN_ = 0.15;
 	V_MAX_ = 1.5;
-	V_MIN_ACC_ = 0.5;
+	V_MIN_ACC_ = 1.5;
 	V_MIN_STACKED_ = 0.01;
 	W_MIN_ = 0.628;
 	W_MAX_ = 12.57;
@@ -90,8 +97,8 @@ void move_init() {
 	P_w_ = 10.0;
 	J_MAX_ = 24.0;
 	J_MAX_STOP_ = 15.0;
-	J_ROT_MAX_ = 810.0;
-	J_ROT_MAX_STOP_ = 200.0;
+	J_ROT_MAX_ = 300.0;
+	J_ROT_MAX_STOP_ = 100.0;
 	D_TOL_ = 0.02; // absolute distance from target
 	D_PROJ_TOL_ = 0.005; // projected distance from target
 	D_LONG_TOL_ = 0.12; // distance before rotation is used fully
@@ -103,8 +110,8 @@ void move_init() {
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 8.0, 0.005, 0.5, 1680, 420);
-	init_pid(&w_loop, 40.0, 0.01, 1.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
+	init_pid(&v_loop, 5.0, 0.005, 0.1, 1680, 420);
+	init_pid(&w_loop, 20.0, 0.01, 2.0, 1680, 420); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
@@ -140,8 +147,6 @@ void control_loop() {
 		reset_pid(&v_loop);
 	}
 
-	velocity_loop();
-
 	a_ = (v_base_ - prev_v_) / dt_;
 	alpha_ = (w_base_ - prev_w_) / dt_;
 
@@ -160,7 +165,7 @@ static double vel_ramp(double signal, double reference, double acc) {
 	return signal;
 }
 
-static void velocity_loop() {
+void velocity_loop() {
 	// ulaz: referenca za brzine levog i desnog: v_ref_, w_ref_
 	double v_err = v_ref_ - get_v();
 	double w_err = w_ref_ - get_w();
@@ -206,15 +211,26 @@ static void curve_controller() {
 	x_error_ = x_ref_ - x_base_;
 	y_error_ = y_ref_ - y_base_;
 	distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);
-	// End condition
-	if (s_ >= 1.0)	// Dodatni uslovi
-		movement_state_ = -1;
-	// Curve params
+
 	vec2 P_cur = P(ctrl_bezier_, s_);
+	double exc = P_cur.x - x_base_;
+	double eyc = P_cur.y - y_base_;
 	vec2 T_cur = T_norm(ctrl_bezier_, s_);
+	double tangential_distance = exc * T_cur.x + eyc * T_cur.y;
+	if (distance_ < 0.1)
+		distance_ = tangential_distance;
+	// End condition
+	if (distance_ < 0.0 || s_ >= 0.999f)
+	{
+		movement_state_ = -1;
+	}
+	// Curve params
 	double K_cur = K(ctrl_bezier_, s_);
 //	vec2 N_cur = N_norm(ctrl_bezier_, s_);
-	double kdot = (K_cur - prev_K_) / dt_;
+	double dK_ds = Kdot(ctrl_bezier_, s_);  // Analytical dK/ds
+	double ds_dt = v_base_
+			/ (sqrt(T_cur.x * T_cur.x + T_cur.y * T_cur.y) + 1e-9);
+	double kdot = dK_ds * ds_dt;  // dK/dt = (dK/ds) * (ds/dt)
 	// Linear velocity reference
 	double v_ff = v_max_temp_
 			/ fmax(fabs(1 + L_drive_ / 2 * K_cur),
@@ -223,7 +239,8 @@ static void curve_controller() {
 			j_max_temp_, stopping_distance_, v_max_temp_, V_MIN_, dt_, 0.0, 0.0,
 			V_SLOWED_MAX_, V_MIN_ACC_);
 	double a = j_max_temp_ * dt_;
-	double v_kdot = (2.0 * a) / (L_drive_ * fabs(kdot) + 1e-9);
+	double v_kdot = (2.0 * a) / (L_drive_ * fabs(kdot) + 1e-6);
+	v_kdot = clamp(v_kdot, 0.4, v_max_temp_);
 	v_ref_ = min3(v_ff, v_stop, v_kdot) * direction_;
 	// Angular velocity reference
 	double w_ff = fabs(v_ref_) * K_cur;

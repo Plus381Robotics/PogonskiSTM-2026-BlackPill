@@ -12,7 +12,8 @@ volatile int16_t tim2_diff = 0, tim3_diff = 0, tim4_diff = 0, tim5_diff = 0;
 volatile int16_t tim2_cur = 0, tim3_cur = 0, tim4_cur = 0, tim5_cur = 0;
 volatile double vel_dbg;
 volatile double motorCtrl, out_vel;
-static uint8_t uart_psc = 100, uart_psc_cnt = 1;
+static uint8_t uart_psc = 200, uart_psc_cnt = 1;
+static uint8_t ctrl_psc = 2, ctrl_psc_cnt = 1;
 float vl = 0.0, vr = 0.0;
 
 void time_ISR()	// poziva se u stm32f4xx_it.c, na 1ms
@@ -21,12 +22,18 @@ void time_ISR()	// poziva se u stm32f4xx_it.c, na 1ms
 
 	sys_time_ms++;
 	update_odom();
-	control_loop();
 //	vl = vel_dbg;
 //	vr = -vel_dbg;
 //	pwm_left(vl);
 //	pwm_right(vr);
 
+	ctrl_psc_cnt++;
+	if (ctrl_psc_cnt >= ctrl_psc) {
+		ctrl_psc_cnt = 0;
+		control_loop();
+		// control loop ako ovo ne radi dobro, i dt onda treba da se promeni
+	}
+	velocity_loop();
 	uart_psc_cnt++;
 	if (uart_psc_cnt >= uart_psc) {
 		uart_psc_cnt = 0;
