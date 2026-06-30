@@ -178,7 +178,11 @@ void update_tx_buffer() {
 	memcpy(&tx_buffer[29], &s, sizeof(int16_t));
 	int16_t dis = (int16_t) (get_distance() * 1000.0);
 	memcpy(&tx_buffer[31], &dis, sizeof(int16_t));
-	memset(&tx_buffer[33], 0, 5);
+	int16_t v_r = (int16_t) (get_v_ref() * 1000.0);
+	memcpy(&tx_buffer[33], &v_r, sizeof(int16_t));
+	int16_t w_r = (int16_t) (get_w_ref() * 1000.0);
+	memcpy(&tx_buffer[35], &w_r, sizeof(int16_t));
+	memset(&tx_buffer[37], 0, 1);
 
 	// checksum over payload bytes (8→37)
 	uint16_t cksum = fletcher16(&tx_buffer[8], 30);

@@ -60,7 +60,7 @@ bezier *ctrl_bezier_ = &bezier_var_;
 double s_, prev_K_;
 double dir_phi_offset = 0.0;
 // TODO: namesti parametre:
-double L_drive_ = 0.18, k_heading_ = 6.0, k_lateral_ = 6.0;
+double L_drive_ = 0.018, k_heading_ = 6.0, k_lateral_ = 4.0;
 
 uint8_t get_set_goal_reset() {
 	return set_goal_reset;
@@ -74,44 +74,51 @@ double get_distance() {
 	return distance_;
 }
 
+double get_v_ref() {
+	return v_ref_;
+}
+
+double get_w_ref() {
+	return w_ref_;
+}
+
 void move_init() {
 	STACKED_TIME_ = 0.06;
 
-	dt_ = 0.002;
-	V_MIN_ = 0.15;
-	V_MAX_ = 1.5;
-	V_MIN_ACC_ = 1.5;
+	dt_ = 0.01;
+	V_MIN_ = 0.1;
+	V_MAX_ = 1.0;
+	V_MIN_ACC_ = 0.4;
 	V_MIN_STACKED_ = 0.01;
-	W_MIN_ = 0.628;
-	W_MAX_ = 12.57;
-	W_MIN_ACC_ = 3.14;
+	W_MIN_ = 0.314;
+	W_MAX_ = 9.42;
+	W_MIN_ACC_ = 1.57;
 	V_SLOWED_MAX_ = 0.75;
-	MOTOR_V_MAX_ = 1.6;
+	MOTOR_V_MAX_ = 1.2;
 	L_ = 0.1545;
 //		L_MAX_ = 0.1935;
 //		L_MIN_ = 0.1155;
 	L_MAX_ = 0.1545;
 	L_MIN_ = 0.1545;
 //	eta_ = 0.01;
-//	P_w_ = 16.0;
 	P_w_ = 10.0;
-	J_MAX_ = 24.0;
-	J_MAX_STOP_ = 15.0;
-	J_ROT_MAX_ = 300.0;
-	J_ROT_MAX_STOP_ = 100.0;
-	D_TOL_ = 0.02; // absolute distance from target
-	D_PROJ_TOL_ = 0.005; // projected distance from target
+	J_MAX_ = 12.0;
+	J_MAX_STOP_ = 8.0;
+	J_ROT_MAX_ = 30.0;
+	J_ROT_MAX_STOP_ = 20.0;
+	D_TOL_ = 0.003; // absolute distance from target
+	D_PROJ_TOL_ = 0.0; // projected distance from target
 	D_LONG_TOL_ = 0.12; // distance before rotation is used fully
 	D_SHORT_TOL_ = 0.03; // minimal distance for rotation during translation
-	PHI_TOL_ = 0.0157; // absolute angle from target
+	PHI_TOL_ = 0.0078; // absolute angle from target
 
 	v_max_temp_ = V_MAX_;
 	w_max_temp_ = W_MAX_;
 	j_max_temp_ = J_MAX_;
 	j_rot_max_temp_ = J_ROT_MAX_;
 
-	init_pid(&v_loop, 5.0, 0.005, 0.1, 1680, 420);
-	init_pid(&w_loop, 20.0, 0.01, 2.0, 1680, 420); // bilo 52, 0.02, 2.8, 420
+	init_pid(&v_loop, 8.0, 0.01, 0.2, 1680, 280);
+	init_pid(&w_loop, 12.0, 0.02, 1.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
@@ -203,6 +210,12 @@ static void curve_controller() {
 				phi_ref_, 1.0);
 		s_ = 0.0;
 		prev_K_ = K(ctrl_bezier_, s_);
+		distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);
+
+		stopping_distance_ = 5 * pow(v_max_temp_, 1.5) / 3 / sqrt(J_MAX_STOP_);
+
+		reset_pid(&v_loop);
+		reset_pid(&w_loop);
 	}
 	// Position on the curve
 	s_ = s(ctrl_bezier_, x_base_, y_base_, phi_base_ + dir_phi_offset, v_base_,
@@ -220,38 +233,41 @@ static void curve_controller() {
 	if (distance_ < 0.1)
 		distance_ = tangential_distance;
 	// End condition
-	if (distance_ < 0.0 || s_ >= 0.999f)
-	{
+	if (distance_ < 0.0 || (s_ >= 0.99f && distance_ < 0.1)) {
 		movement_state_ = -1;
-	}
-	// Curve params
-	double K_cur = K(ctrl_bezier_, s_);
+	} else {
+		// Curve params
+		double K_cur = K(ctrl_bezier_, s_);
 //	vec2 N_cur = N_norm(ctrl_bezier_, s_);
-	double dK_ds = Kdot(ctrl_bezier_, s_);  // Analytical dK/ds
-	double ds_dt = v_base_
-			/ (sqrt(T_cur.x * T_cur.x + T_cur.y * T_cur.y) + 1e-9);
-	double kdot = dK_ds * ds_dt;  // dK/dt = (dK/ds) * (ds/dt)
-	// Linear velocity reference
-	double v_ff = v_max_temp_
-			/ fmax(fabs(1 + L_drive_ / 2 * K_cur),
-					fabs(1 - L_drive_ / 2 * K_cur));
-	double v_stop = velocity_synthesis(distance_ * direction_, v_base_, a_,
-			j_max_temp_, stopping_distance_, v_max_temp_, V_MIN_, dt_, 0.0, 0.0,
-			V_SLOWED_MAX_, V_MIN_ACC_);
-	double a = j_max_temp_ * dt_;
-	double v_kdot = (2.0 * a) / (L_drive_ * fabs(kdot) + 1e-6);
-	v_kdot = clamp(v_kdot, 0.4, v_max_temp_);
-	v_ref_ = min3(v_ff, v_stop, v_kdot) * direction_;
-	// Angular velocity reference
-	double w_ff = fabs(v_ref_) * K_cur;
-	double ex = x_base_ - P_cur.x;
-	double ey = y_base_ - P_cur.y;
-	double e_lateral = ex * T_cur.y - ey * T_cur.x;
-	double cur_phi_ref = atan2(T_cur.y, T_cur.x) + dir_phi_offset;
-	double e_heading = wrap(cur_phi_ref - phi_base_, -M_PI, M_PI);
-	double w_fb = k_heading_ * e_heading + k_lateral_ * e_lateral * v_ref_;
-	w_ref_ = w_ff + w_fb;
-	prev_K_ = K_cur;
+		double dK_ds = Kdot(ctrl_bezier_, s_);  // Analytical dK/ds
+		double ds_dt = v_base_
+				/ (sqrt(T_cur.x * T_cur.x + T_cur.y * T_cur.y) + 1e-9);
+		double kdot = dK_ds * ds_dt;  // dK/dt = (dK/ds) * (ds/dt)
+		// Linear velocity reference
+		double v_max = v_max_temp_
+				/ fmax(fabs(1 + L_drive_ * 0.5 * K_cur),
+						fabs(1 - L_drive_ * 0.5 * K_cur));
+		double v_ff = velocity_synthesis(fabs(distance_), v_base_, a_,
+				j_max_temp_ * 1.0, stopping_distance_, v_max, V_MIN_, dt_, 0.0,
+				0, V_SLOWED_MAX_, V_MIN_ACC_);
+		double a = j_max_temp_ * dt_;
+		double v_kdot = (2.0 * a) / (L_drive_ * fabs(kdot) + 1e-6);
+		if (v_ff > 10.2)
+			v_kdot = 999.0;
+		else
+			v_kdot = clamp(v_kdot, 0.02, v_max_temp_);
+		v_ref_ = fmin(v_ff, v_kdot);
+		// Angular velocity reference
+		double w_ff = fabs(v_ref_) * K_cur;
+		double ex = x_base_ - P_cur.x;
+		double ey = y_base_ - P_cur.y;
+		double e_lateral = ex * T_cur.y - ey * T_cur.x;
+		double cur_phi_ref = atan2(T_cur.y, T_cur.x) + dir_phi_offset;
+		double e_heading = wrap(cur_phi_ref - phi_base_, -M_PI, M_PI);
+		double w_fb = k_heading_ * e_heading + k_lateral_ * e_lateral * v_ref_;
+		w_ref_ = w_ff + w_fb;
+		prev_K_ = K_cur;
+	}
 }
 
 static void rotate() {
@@ -324,6 +340,8 @@ static void go_to_xy() {
 		if (fabs(phi_error_) < PHI_TOL_ * 3.0 && fabs(get_w()) < W_MIN_ * 2.0) {
 			reg_phase_ = 2;
 			w_max_temp_ = W_MAX_;
+			reset_pid(&v_loop);
+			reset_pid(&w_loop);
 		}
 		v_ref_ = 0;
 		w_ref_ = velocity_synthesis(phi_error_, w_base_, alpha_,

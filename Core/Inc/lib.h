@@ -181,6 +181,8 @@ void process_rx_buffer();
 goal_type* get_rx_goal();
 
 // control.h
+double get_v_ref();
+double get_w_ref();
 void velocity_loop();
 double get_s();
 double get_distance();
