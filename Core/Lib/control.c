@@ -90,9 +90,9 @@ void move_init() {
 	V_MAX_ = 1.0;
 	V_MIN_ACC_ = 0.4;
 	V_MIN_STACKED_ = 0.01;
-	W_MIN_ = 0.314;
-	W_MAX_ = 9.42;
-	W_MIN_ACC_ = 1.57;
+	W_MIN_ = 0.628;
+	W_MAX_ = 12.68;
+	W_MIN_ACC_ = 3.14;
 	V_SLOWED_MAX_ = 0.75;
 	MOTOR_V_MAX_ = 1.2;
 	L_ = 0.1545;
@@ -102,10 +102,10 @@ void move_init() {
 	L_MIN_ = 0.1545;
 //	eta_ = 0.01;
 	P_w_ = 10.0;
-	J_MAX_ = 12.0;
-	J_MAX_STOP_ = 8.0;
-	J_ROT_MAX_ = 30.0;
-	J_ROT_MAX_STOP_ = 20.0;
+	J_MAX_ = 10.0;
+	J_MAX_STOP_ = 12.0;
+	J_ROT_MAX_ = 400.0;
+	J_ROT_MAX_STOP_ = 200.0;
 	D_TOL_ = 0.003; // absolute distance from target
 	D_PROJ_TOL_ = 0.0; // projected distance from target
 	D_LONG_TOL_ = 0.12; // distance before rotation is used fully
