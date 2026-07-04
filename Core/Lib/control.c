@@ -207,7 +207,7 @@ static void curve_controller() {
 		movement_state_ = 1;
 		dir_phi_offset = (direction_ - 1) * M_PI * 0.5;
 		init_bezier(ctrl_bezier_, x_base_, y_base_, phi_base_, x_ref_, y_ref_,
-				phi_ref_, 1.0);
+				phi_ref_, 0.64);
 		s_ = 0.0;
 		prev_K_ = K(ctrl_bezier_, s_);
 		distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);
