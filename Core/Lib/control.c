@@ -60,7 +60,7 @@ bezier *ctrl_bezier_ = &bezier_var_;
 double s_, prev_K_;
 double dir_phi_offset = 0.0;
 // TODO: namesti parametre:
-double L_drive_ = 0.018, k_heading_ = 6.0, k_lateral_ = 4.0;
+double L_drive_ = 0.018, k_heading_ = 5.0, k_lateral_ = 15.0;
 
 uint8_t get_set_goal_reset() {
 	return set_goal_reset;
@@ -103,7 +103,7 @@ void move_init() {
 //	eta_ = 0.01;
 	P_w_ = 10.0;
 	J_MAX_ = 10.0;
-	J_MAX_STOP_ = 12.0;
+	J_MAX_STOP_ = 12.0*0.64;
 	J_ROT_MAX_ = 400.0;
 	J_ROT_MAX_STOP_ = 200.0;
 	D_TOL_ = 0.003; // absolute distance from target
@@ -207,7 +207,7 @@ static void curve_controller() {
 		movement_state_ = 1;
 		dir_phi_offset = (direction_ - 1) * M_PI * 0.5;
 		init_bezier(ctrl_bezier_, x_base_, y_base_, phi_base_, x_ref_, y_ref_,
-				phi_ref_, 0.64);
+				phi_ref_, 0.5);
 		s_ = 0.0;
 		prev_K_ = K(ctrl_bezier_, s_);
 		distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);

@@ -20,6 +20,7 @@ volatile int16_t enc_l_sum;		// [inc]
 volatile int16_t enc_r_sum;		// [inc]
 
 volatile double v_right, v_left;
+volatile double dis_right, dis_left;
 volatile double v_base, w_base;
 volatile double x_base = 0.0, y_base = 0.0, phi_base = 0.0;
 
@@ -43,6 +44,8 @@ update_odom ()
 	v_right = -enc_velocity (v_r_diff, 0.001, 8192) * d_odom_right;			// rad/s, a treba da budu m/s
 	v_left = enc_velocity (v_l_diff, 0.001, 8192) * d_odom_left;
 
+	dis_right += v_right;
+	dis_left += v_left;
 	v_base = (v_right + v_left) * 0.5;									// [m/s]
 	w_base = (v_right - v_left) * L_wheel_recip;				// [rad/s]
 	mid_angle = (phi_base + w_base * 0.005);						// [rad + 0.5*rad/s * 0.001s = rad]
