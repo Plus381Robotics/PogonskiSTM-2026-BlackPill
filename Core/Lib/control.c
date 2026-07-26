@@ -103,7 +103,7 @@ void move_init() {
 //	eta_ = 0.01;
 	P_w_ = 10.0;
 	J_MAX_ = 10.0;
-	J_MAX_STOP_ = 12.0*0.64;
+	J_MAX_STOP_ = 12.0*0.4;
 	J_ROT_MAX_ = 400.0;
 	J_ROT_MAX_STOP_ = 200.0;
 	D_TOL_ = 0.003; // absolute distance from target
@@ -118,7 +118,7 @@ void move_init() {
 	j_rot_max_temp_ = J_ROT_MAX_;
 
 	init_pid(&v_loop, 8.0, 0.01, 0.2, 1680, 280);
-	init_pid(&w_loop, 12.0, 0.02, 1.0, 1680, 280); // bilo 52, 0.02, 2.8, 420
+	init_pid(&w_loop, 28.0, 0.02, 0.8, 1680, 280); // bilo 52, 0.02, 2.8, 420
 }
 
 void control_loop() {
