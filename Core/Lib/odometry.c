@@ -27,10 +27,10 @@ volatile double x_base = 0.0, y_base = 0.0, phi_base = 0.0;
 void
 odometry_init ()
 {
-	L_wheel = 0.2993;																	// [m], rastojanje izmedju odometrijskih tockova
+	L_wheel = 0.299377;																	// [m], rastojanje izmedju odometrijskih tockova
 	L_wheel_recip = 1 / L_wheel;										// [1/m]
-	d_odom_left = 0.07509;															// [m]
-	d_odom_right = 0.07528;															// [m]
+	d_odom_left = 0.07524;															// [m]
+	d_odom_right = 0.07507;															// [m]
 	enc_r_sum = 0;
 	enc_l_sum = 0;
 }
@@ -54,7 +54,7 @@ update_odom ()
 	y_base += v_base * sin (mid_angle) * 0.001;
 	phi_base += w_base * 0.001;													// [0.001s * rad/s = rad]
 
-	wrap2Pi (&phi_base);
+//	wrap2Pi (&phi_base);
 }
 
 double

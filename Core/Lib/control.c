@@ -83,7 +83,7 @@ double get_w_ref() {
 }
 
 void move_init() {
-	STACKED_TIME_ = 0.06;
+	STACKED_TIME_ = 0.25;
 
 	dt_ = 0.01;
 	V_MIN_ = 0.1;
@@ -103,7 +103,7 @@ void move_init() {
 //	eta_ = 0.01;
 	P_w_ = 10.0;
 	J_MAX_ = 10.0;
-	J_MAX_STOP_ = 12.0*0.4;
+	J_MAX_STOP_ = 12.0 * 0.4;
 	J_ROT_MAX_ = 400.0;
 	J_ROT_MAX_STOP_ = 200.0;
 	D_TOL_ = 0.003; // absolute distance from target
@@ -207,12 +207,12 @@ static void curve_controller() {
 		movement_state_ = 1;
 		dir_phi_offset = (direction_ - 1) * M_PI * 0.5;
 		init_bezier(ctrl_bezier_, x_base_, y_base_, phi_base_, x_ref_, y_ref_,
-				phi_ref_, 0.5);
+				phi_ref_, 0.6);
 		s_ = 0.0;
 		prev_K_ = K(ctrl_bezier_, s_);
 		distance_ = sqrt(x_error_ * x_error_ + y_error_ * y_error_);
 
-		stopping_distance_ = 5 * pow(v_max_temp_, 1.5) / 3 / sqrt(J_MAX_STOP_);
+		stopping_distance_ = 5 * pow(v_max_temp_, 1.5) / 3 / sqrt(J_MAX_STOP_*0.5);
 
 		reset_pid(&v_loop);
 		reset_pid(&w_loop);
@@ -235,14 +235,17 @@ static void curve_controller() {
 	// End condition
 	if (distance_ < 0.0 || (s_ >= 0.99f && distance_ < 0.1)) {
 		movement_state_ = -1;
+	} else if (stacked(STACKED_TIME_, v_base_, V_MIN_STACKED_, 1.0 / dt_,
+			&stacked_cnt_)) {
+		movement_state_ = -3;
 	} else {
 		// Curve params
 		double K_cur = K(ctrl_bezier_, s_);
 //	vec2 N_cur = N_norm(ctrl_bezier_, s_);
-		double dK_ds = Kdot(ctrl_bezier_, s_);  // Analytical dK/ds
+		double dK_ds = Kdot(ctrl_bezier_, s_); // Analytical dK/ds
 		double ds_dt = v_base_
 				/ (sqrt(T_cur.x * T_cur.x + T_cur.y * T_cur.y) + 1e-9);
-		double kdot = dK_ds * ds_dt;  // dK/dt = (dK/ds) * (ds/dt)
+		double kdot = dK_ds * ds_dt; // dK/dt = (dK/ds) * (ds/dt)
 		// Linear velocity reference
 		double v_max = v_max_temp_
 				/ fmax(fabs(1 + L_drive_ * 0.5 * K_cur),
